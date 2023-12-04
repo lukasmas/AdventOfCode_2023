@@ -6,6 +6,8 @@ Here are my solutions to the challenges.
 
 ## Solved changes
 
+![stars info](./AoC_StarsCount.png)
+
 - https://adventofcode.com/2023/day/1
 - https://adventofcode.com/2023/day/2
 - https://adventofcode.com/2023/day/3
