@@ -58,91 +58,126 @@ auto extractNumbers(const std::string &numbers)
     {
         if (is_number(n))
         {
-            nums.push_back(atoi(n.c_str()));
+            nums.push_back(atoll(n.c_str()));
         }
     }
     return nums;
 }
 
-void getValueFromMap(const std::vector<std::uint64_t> &mappingInstuctions, SeedInfo &seedInfos, std::vector<bool> &updated)
+std::vector<std::pair<std::uint64_t, std::uint64_t>> mapValues(const std::vector<std::uint64_t> &mapInfo, std::uint64_t start, std::uint64_t range, std::vector<std::pair<std::uint64_t, std::uint64_t>> &nextRanges)
 {
-    if (mappingInstuctions.size() != keywords::mapSize)
+    std::vector<std::pair<std::uint64_t, std::uint64_t>> newRanges{};
+    const auto sourceFromMap = mapInfo.at(keywords::source);
+    const auto rangeFromMap = mapInfo.at(keywords::range);
+    const auto destFromMap = mapInfo.at(keywords::destination);
+    const auto end = start + range - 1;
+    const auto endMap = sourceFromMap + rangeFromMap - 1;
+    if (end < sourceFromMap || start > endMap)
     {
-        return;
+        newRanges.push_back({start, range});
+        return newRanges;
     }
 
-    auto index{0U};
-    for (auto &seedInfo : seedInfos)
+    if (start >= sourceFromMap)
     {
-        const auto source = mappingInstuctions.at(keywords::source);
-        const auto range = mappingInstuctions.at(keywords::range);
-        // std::cout << seedInfo << " | " << source << " | " << range << std::endl;
-        // std::cout << seedInfo << " -> ";
-        if (updated[index])
-        {
-            index++;
-            continue;
-        }
-        if (seedInfo >= source && seedInfo < (source + range))
-        {
-            const auto destinationOffset = seedInfo - source;
-            // std::cout << "Dest offset: " << destinationOffset << std::endl;
-            seedInfo = (mappingInstuctions.at(keywords::destination) + destinationOffset);
-            updated[index++] = true;
-            // std::cout << "Result: " << mappingInstuctions.at(keywords::destination) + destinationOffset << std::endl;
-        }
+        const auto startOffset = start - sourceFromMap;
 
-        // std::cout << seedInfo << std::endl;
+        if (range <= rangeFromMap - startOffset)
+        {
+            nextRanges.push_back({destFromMap + startOffset, range});
+        }
+        else
+        {
+            const auto elementsToMap = rangeFromMap - startOffset;
+            const auto rangeOffset = range - elementsToMap;
+            nextRanges.push_back({destFromMap + startOffset, elementsToMap});
+            newRanges.push_back({start + elementsToMap, rangeOffset});
+        }
     }
+    else
+    {
+        const auto startOffset = sourceFromMap - start;
+        const auto rangeOffset = range - startOffset;
+
+        newRanges.push_back({start, startOffset});
+        if (rangeOffset <= rangeFromMap)
+        {
+            nextRanges.push_back({destFromMap, rangeOffset});
+        }
+        else
+        {
+            nextRanges.push_back({destFromMap, rangeFromMap});
+            newRanges.push_back({start + rangeFromMap + startOffset, rangeOffset - rangeFromMap});
+        }
+    }
+
+    return newRanges;
 }
 
-void fillMiisingData(std::vector<SeedInfo> &seedInfos, std::uint32_t expectedSize = 2)
+std::uint64_t getLowestLocation(const std::vector<std::pair<std::uint64_t, std::uint64_t>> &startsAndRanges, const std::vector<std::vector<SeedInfo>> &maps)
 {
-    for (auto &seedInfo : seedInfos)
+    std::uint64_t minLocation{std::numeric_limits<std::uint64_t>::max()};
+    std::vector<std::pair<std::uint64_t, std::uint64_t>> nextRanges{}, currentRanges{}, newRanges{};
+
+    for (const auto &ranges : startsAndRanges)
     {
-        if (seedInfo.size() != expectedSize)
+        const auto expectedRange = ranges.second;
+        nextRanges.clear();
+        nextRanges.push_back(ranges);
+        int map = 1;
+        for (const auto &sourceToDestMap : maps)
         {
-            seedInfo.push_back(seedInfo.back());
+            auto rangesToprocess = nextRanges;
+            nextRanges.clear();
+
+            for (auto &rtp : rangesToprocess)
+            {
+
+                currentRanges.clear();
+                currentRanges.push_back(rtp);
+
+                for (auto &mapInfo : sourceToDestMap)
+                {
+                    newRanges.clear();
+
+                    if (mapInfo.size() != 3)
+                    {
+                        return 0;
+                    }
+                    for (const auto [start, range] : currentRanges)
+                    {
+                        auto values = mapValues(mapInfo, start, range, nextRanges);
+                        for (const auto &v : values)
+                        {
+                            newRanges.push_back(v);
+                        }
+                    }
+
+                    currentRanges = newRanges;
+                }
+                for (const auto &cr : currentRanges)
+                {
+                    nextRanges.push_back(cr);
+                }
+            }
         }
-        auto back = seedInfo.back();
-        seedInfo.clear();
-        seedInfo.push_back(back);
-    }
-}
 
-void printSeedInfos(const SeedInfo &seedsInfo)
-{
-    for (const auto &seedInfo : seedsInfo)
-    {
-
-        std::cout << seedInfo << " ";
+        for (const auto [s, r] : nextRanges)
+        {
+            minLocation = std::min(minLocation, s);
+        }
     }
-    std::cout << std::endl;
-}
 
-std::uint64_t getLowestLocation(const SeedInfo &seedsInfo)
-{
-    std::uint64_t min = std::numeric_limits<std::uint64_t>::max();
-    for (const auto &seedInfo : seedsInfo)
-    {
-        min = std::min(min, seedInfo);
-    }
-    return min;
+    return minLocation;
 }
 
 int main()
 {
     std::string line{};
     std::ifstream data("../data.txt");
-    SeedInfo seedInfos{};
-    std::uint32_t mapProcessed{};
-    std::uint32_t batch{0};
-
-    std::uint64_t minLocation{std::numeric_limits<std::uint64_t>::max()};
+    std::vector<std::vector<SeedInfo>> maps{};
 
     std::vector<std::pair<std::uint64_t, std::uint64_t>> startsAndRanges{};
-    bool allBatchesProccesed{false};
-
     std::cout << "DAY 5" << std::endl;
 
     if (!data.is_open())
@@ -151,77 +186,43 @@ int main()
         return -1;
     }
 
-    while (!allBatchesProccesed)
+    while (std::getline(data, line))
     {
-        while (std::getline(data, line))
+        if (const auto pos = line.find(keywords::seeds); pos != std::string::npos)
         {
-            if (const auto pos = line.find(keywords::seeds); pos != std::string::npos)
+            if (startsAndRanges.empty())
             {
-                if (startsAndRanges.empty())
+                auto counter{1U};
+                std::pair<std::uint32_t, std::uint32_t> startAndRange{};
+                for (const auto n : extractNumbers(line.substr(pos + 1)))
                 {
-                    auto counter{1U};
-                    std::pair<std::uint32_t, std::uint32_t> startAndRange{};
-                    for (const auto n : extractNumbers(line.substr(pos + 1)))
+                    if (counter++ % 2 != 0)
                     {
-                        // seedInfos.push_back(SeedInfo{n});
-                        if (counter++ % 2 != 0)
-                        {
-                            startAndRange.first = n;
-                        }
-                        else
-                        {
-                            startAndRange.second = n;
-                            startsAndRanges.push_back(startAndRange);
-                            // std::cout << startAndRange.first << " " << startAndRange.second << std::endl;
-                        }
+                        startAndRange.first = n;
                     }
-                    std::cout << "Ranges created" << std::endl;
+                    else
+                    {
+                        startAndRange.second = n;
+                        startsAndRanges.push_back(startAndRange);
+                    }
                 }
-                seedInfos.clear();
-                for (std::uint64_t i{startsAndRanges[batch].first}; i < (startsAndRanges[batch].first + startsAndRanges[batch].second); i++)
-                {
-                    seedInfos.push_back(i);
-                }
-                std::cout << "Seed info done" << std::endl;
-                // printSeedInfos(seedInfos);
-
-                batch++;
-                if (batch == startsAndRanges.size())
-                {
-                    allBatchesProccesed = true;
-                }
-                mapProcessed = 1;
-
-                continue;
             }
-            else if (const auto pos = line.find(keywords::map); pos != std::string::npos)
-            {
-                ++mapProcessed;
-                // printSeedInfos(seedInfos);
-                std::vector<bool> updated(seedInfos.size(), false);
-                while (std::getline(data, line) && !line.empty())
-                {
-                    getValueFromMap(extractNumbers(line), seedInfos, updated);
-                }
-                // printSeedInfos(seedInfos);
 
-                // printSeedInfos(seedInfos);
-
-                // fillMiisingData(seedInfos);
-                std::cout << "Map " << mapProcessed - 1 << " done" << std::endl;
-                // break;
-            }
+            continue;
         }
-
-        minLocation = std::min(minLocation, getLowestLocation(seedInfos));
-        // printSeedInfos(seedInfos);
-        std::cout << std::endl;
-        std::cout << "Batch min location: " << minLocation << std::endl;
-        data.clear();
-        data.seekg(0);
+        else if (const auto pos = line.find(keywords::map); pos != std::string::npos)
+        {
+            std::vector<SeedInfo> mapInfo{};
+            while (std::getline(data, line) && !line.empty())
+            {
+                mapInfo.push_back(extractNumbers(line));
+            }
+            maps.push_back(mapInfo);
+        }
     }
-    // std::cout << "Solution 1 result: " << getLowestLocation(seedInfos) << std::endl;
-    std::cout << "Solution 2 result: " << minLocation << std::endl;
+
+    std::cout << "Solution 2 result: "
+              << getLowestLocation(startsAndRanges, maps) << std::endl;
 
     data.close();
     return 0;
