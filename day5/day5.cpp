@@ -21,49 +21,6 @@ namespace keywords
     constexpr auto mapSize{3U};
 }
 
-auto splitString(const std::string &str, const std::string &delimiter)
-{
-    std::vector<std::string> splitStr{};
-    auto beginPos{0};
-    auto endPos{0};
-    bool endReached{false};
-
-    while (!endReached)
-    {
-        endPos = str.find(delimiter, beginPos);
-        if (endPos == std::string::npos)
-        {
-            splitStr.push_back(str.substr(beginPos, endPos));
-            endReached = true;
-        }
-        else
-        {
-            splitStr.push_back(str.substr(beginPos, endPos - beginPos));
-            beginPos = endPos + 1;
-        }
-    }
-    return splitStr;
-}
-
-bool is_number(const std::string &s)
-{
-    return !s.empty() && std::all_of(s.begin(), s.end(), ::isdigit);
-}
-
-auto extractNumbers(const std::string &numbers)
-{
-    std::vector<std::uint64_t> nums{};
-    const auto numsStr = splitString(numbers, " ");
-    for (const auto n : numsStr)
-    {
-        if (is_number(n))
-        {
-            nums.push_back(atoll(n.c_str()));
-        }
-    }
-    return nums;
-}
-
 std::vector<std::pair<std::uint64_t, std::uint64_t>> mapValues(const std::vector<std::uint64_t> &mapInfo, std::uint64_t start, std::uint64_t range, std::vector<std::pair<std::uint64_t, std::uint64_t>> &nextRanges)
 {
     std::vector<std::pair<std::uint64_t, std::uint64_t>> newRanges{};
