@@ -46,4 +46,14 @@ namespace utils
         }
         return nums;
     }
+
+    void removeWhiteSpaces(std::string &line)
+    {
+        auto pos = line.find(" ");
+        while (pos != std::string::npos)
+        {
+            line.erase(pos, 1);
+            pos = line.find(" ");
+        }
+    }
 }

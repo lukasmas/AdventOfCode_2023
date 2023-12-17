@@ -1,3 +1,4 @@
+#include "../utils/utils.hpp"
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -151,7 +152,7 @@ int main()
             {
                 auto counter{1U};
                 std::pair<std::uint32_t, std::uint32_t> startAndRange{};
-                for (const auto n : extractNumbers(line.substr(pos + 1)))
+                for (const auto n : utils::extractNumbers(line.substr(pos + 1)))
                 {
                     if (counter++ % 2 != 0)
                     {
@@ -172,7 +173,7 @@ int main()
             std::vector<SeedInfo> mapInfo{};
             while (std::getline(data, line) && !line.empty())
             {
-                mapInfo.push_back(extractNumbers(line));
+                mapInfo.push_back(utils::extractNumbers(line));
             }
             maps.push_back(mapInfo);
         }
