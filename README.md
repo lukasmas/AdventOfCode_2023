@@ -12,6 +12,9 @@ Here are my solutions to the challenges.
 - https://adventofcode.com/2023/day/2
 - https://adventofcode.com/2023/day/3
 - https://adventofcode.com/2023/day/4
+- https://adventofcode.com/2023/day/5
+- https://adventofcode.com/2023/day/6
+- https://adventofcode.com/2023/day/7
 
 ## Compiling and running
 

@@ -10,7 +10,23 @@
 
 #include "../utils/utils.hpp"
 
-const std::map<char, int> cards{{'A', 13}, {'K', 12}, {'Q', 11}, {'J', 10}, {'T', 9}, {'9', 8}, {'8', 7}, {'7', 6}, {'6', 5}, {'5', 4}, {'4', 3}, {'3', 2}, {'2', 1}};
+constexpr char joker = 'J';
+
+const std::map<char, int> cards{
+    {'A', 13},
+    {'K', 12},
+    {'Q', 11},
+    {'T', 9},
+    {'9', 8},
+    {'8', 7},
+    {'7', 6},
+    {'6', 5},
+    {'5', 4},
+    {'4', 3},
+    {'3', 2},
+    {'2', 1},
+    {'J', 0},
+};
 
 enum class Type
 {
@@ -65,12 +81,40 @@ std::map<char, std::uint32_t> calculateCards(const std::string &cards)
     return cardsMap;
 }
 
+std::map<char, std::uint32_t> applyTheJoker(const std::map<char, std::uint32_t> &cards)
+{
+    auto updatedCards = cards;
+    if (cards.find(joker) == cards.end())
+    {
+        return updatedCards;
+    }
+
+    auto strogestCard = std::make_pair<char, std::uint32_t>('J', 0);
+    for (const auto &[card, count] : cards)
+    {
+
+        if (card != joker && strogestCard.second < count)
+        {
+            strogestCard.first = card;
+            strogestCard.second = count;
+        }
+    }
+    if (strogestCard.second != 0)
+    {
+        updatedCards[strogestCard.first] += updatedCards[joker];
+        updatedCards[joker] = 0;
+    }
+
+    return updatedCards;
+}
+
 Type getHandType(const std::string &cards)
 {
     std::uint32_t pairsCount{0};
     bool threeExist{false};
+    auto mapedCards = applyTheJoker(calculateCards(cards));
 
-    for (auto [card, count] : calculateCards(cards))
+    for (auto [card, count] : mapedCards)
     {
         switch (count)
         {
