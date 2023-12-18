@@ -206,7 +206,7 @@ int main()
 
     std::vector<Hand> games{};
 
-    std::cout << "DAY 6" << std::endl;
+    std::cout << "DAY 7" << std::endl;
 
     if (!data.is_open())
     {
