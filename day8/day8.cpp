@@ -43,31 +43,54 @@ void printDesertMap(const std::map<std::string, Direction> &desertMap)
     }
 }
 
-std::uint32_t goThroughTheMap(const std::string &instructions, const std::map<std::string, Direction> &desertMap)
+std::uint64_t calculateLCM(const std::map<std::string, std::uint64_t> &destinations)
+{
+    auto result = destinations.begin()->second;
+    for (const auto &[point, steps] : destinations)
+    {
+        result = std::lcm(result, steps);
+    }
+    return result;
+}
+
+std::uint64_t goThroughTheMap(const std::string &instructions, const std::map<std::string, Direction> &desertMap, const std::vector<std::string> &startingPoints)
 {
     std::uint32_t stepCounter{0};
-    auto key = std::string(start);
-    while (key != destination)
+    std::vector<std::string> elems = startingPoints;
+    std::map<std::string, std::uint64_t> destinationReached{};
+    bool allDestinationSet = false;
+    while (!allDestinationSet)
         for (char ins : instructions)
         {
-            // std::cout << ins << " : " << key << " -> ";
             stepCounter++;
-            if (ins == right)
+            std::uint32_t reachedDests{0};
+            for (auto &elem : elems)
             {
-                key = desertMap.at(key).right;
+                switch (ins)
+                {
+                case right:
+                    elem = desertMap.at(elem).right;
+                    break;
+                case left:
+                    elem = desertMap.at(elem).left;
+                    break;
+                }
+                if (elem.back() == 'Z')
+                {
+                    if (destinationReached.find(elem) == destinationReached.end())
+                    {
+                        destinationReached[elem] = stepCounter;
+                    }
+                }
             }
-            else
-            {
-                key = desertMap.at(key).left;
-            }
-            // std::cout << key << " | " << stepCounter << std::endl;
 
-            if (key == destination)
+            if (destinationReached.size() == elems.size())
             {
+                allDestinationSet = true;
                 break;
             }
         }
-    return stepCounter;
+    return calculateLCM(destinationReached);
 }
 
 int main()
@@ -77,7 +100,7 @@ int main()
 
     std::string instructions{};
     std::map<std::string, Direction> desertMap{};
-    std::string firstElem{};
+    std::vector<std::string> startingPoints{};
 
     std::cout << "DAY 8" << std::endl;
 
@@ -97,12 +120,21 @@ int main()
         }
         auto data = extractData(line);
         desertMap[data.first] = data.second;
+        if (data.first.back() == 'A')
+        {
+            startingPoints.push_back(data.first);
+        }
     }
 
-    std::cout << instructions << std::endl;
-    printDesertMap(desertMap);
+    for (const auto &s : startingPoints)
+    {
+        std::cout << s << std::endl;
+    }
 
-    auto result = goThroughTheMap(instructions, desertMap);
+    // std::cout << instructions << std::endl;
+    // printDesertMap(desertMap);
+
+    auto result = goThroughTheMap(instructions, desertMap, startingPoints);
 
     std::cout << std::endl;
     std::cout
